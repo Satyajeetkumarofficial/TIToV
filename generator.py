@@ -1,25 +1,34 @@
-import time, random
-from moviepy.editor import TextClip, concatenate_videoclips
+import os
+import time
+from moviepy.editor import *
 from PIL import Image, ImageDraw, ImageFont
 
-def text_to_image(prompt):
-    img = Image.new("RGB", (720, 480), (245, 245, 245))
+OUT_FOLDER = "outputs"
+os.makedirs(OUT_FOLDER, exist_ok=True)
+
+def estimate_time(text):
+    return len(text) * 0.2  # fake estimation UI
+
+def text_to_image(text):
+    img_path = f"{OUT_FOLDER}/image_{int(time.time())}.png"
+    img = Image.new("RGB", (1280, 720), "white")
     draw = ImageDraw.Draw(img)
     font = ImageFont.load_default()
-    draw.text((30, 200), prompt, fill=(0, 0, 0), font=font)
-    filename = f"generated_{int(time.time())}.png"
-    img.save(filename)
-    return filename
+    draw.text((50, 350), text, fill="black", font=font)
+    img.save(img_path)
+    return img_path
 
-def text_to_video(prompt):
+def text_to_video(text):
+    est = estimate_time(text)
+
     clips = []
     for i in range(3):
-        txt = TextClip(f"{prompt} - scene {i+1}", fontsize=50, color='white', bg_color='black', size=(720,480))
-        clips.append(txt.set_duration(2))
-    final = concatenate_videoclips(clips)
-    out_file = f"video_{int(time.time())}.mp4"
-    final.write_videofile(out_file, fps=24)
-    return out_file
+        img_path = text_to_image(text)
+        clip = ImageClip(img_path).set_duration(2)
+        clips.append(clip)
 
-def estimate_time():
-    return random.randint(10, 30)
+    video = concatenate_videoclips(clips)
+    output = f"{OUT_FOLDER}/video_{int(time.time())}.mp4"
+    video.write_videofile(output, fps=24, codec="libx264", audio=False)
+
+    return output
